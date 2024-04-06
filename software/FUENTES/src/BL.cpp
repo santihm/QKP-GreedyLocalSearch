@@ -40,39 +40,17 @@ vector<bool> solucionInicial(const vector<Objeto>& objeto, const int& n, int cap
 }
 
 
-vector<pair<int, vector<vector<int>>>> VecinosPermutacion(const Mochila& actual, const int& capacidad) {
+vector<pair<int, vector<vector<int>>>> VecinosPermutacion(const Mochila& actual, const int& W) {
     vector<pair<int, vector<vector<int>>>> vecinos;
     const vector<Objeto>& objeto = actual.getObjeto();
     const vector<bool>& v = actual.getAsignacion();
+
     for (int i = 0; i < objeto.size(); i++) {
-        if (!v[i]) {
+        if (v[i]) {
             for (int j = 0; j < objeto.size(); j++) {
-                if (v[j] && (capacidad + objeto[j].getPeso() - objeto[i].getPeso()) >= 0) {
-                    vecinos.push_back({objeto[j].getIndice(), {{objeto[i].getIndice()}}});
-                }
-            }
-        }
-    }
-    return vecinos;
-}
-
-
-
-
-vector<pair<int, vector<vector<int>>>> VecinosDobleIntercambio(const Mochila& actual, const int& capacidad) {
-    vector<pair<int, vector<vector<int>>>> vecinos = VecinosPermutacion(actual, capacidad);
-    const vector<Objeto> objeto = actual.getObjeto();
-    const vector<bool> v = actual.getAsignacion();
-    for (int i = 0; i < vecinos.size(); i++) {
-        vector<vector<int>>& ceros = vecinos[i].second;
-        for (int j = 0; j < ceros.size(); j++) {
-            int capacidad_actual = capacidad - objeto[vecinos[i].first].getPeso() + objeto[ceros[j][0]].getPeso();
-            for (int k = 0; k < objeto.size(); k++) {
-                if (!v[k] && k != ceros[j][0] && capacidad_actual + objeto[k].getPeso() >= 0) {
-                    vector<int> grupo = ceros[j];
-                    if (grupo.size() < 2) { // Control de tamaño máximo del grupo
-                        grupo.push_back(k);
-                        vecinos[i].second.push_back(grupo);
+                if (!v[j] && i != j) {  // Evitar intercambiar un objeto consigo mismo
+                    if (actual.getPeso() - objeto[i].getPeso() + objeto[j].getPeso() <= W) {
+                        vecinos.push_back({objeto[i].getIndice(), {{objeto[j].getIndice()}}});
                     }
                 }
             }
@@ -82,58 +60,37 @@ vector<pair<int, vector<vector<int>>>> VecinosDobleIntercambio(const Mochila& ac
 }
 
 
-vector<pair<int, vector<vector<int>>>> VecinosTripleIntercambio(const Mochila& actual, const int& capacidad){
-  vector<pair<int, vector<vector<int>>>> vecinos = VecinosDobleIntercambio(actual, capacidad);
-  const vector<Objeto> objeto = actual.getObjeto();
-  const vector<bool> v = actual.getAsignacion();
-  int capacidad_actual;
-  bool encontrado;
-  for (int i=0; i<vecinos.size(); i++){
-    vector<vector<int>> ceros = vecinos[i].second;
-    for (int j=0; j<ceros.size(); j++){
-        if (ceros[j].size()>1){
-            encontrado = false;
-            capacidad_actual = (capacidad - objeto[vecinos[i].first].getPeso() + objeto[ceros[j][0]].getPeso() + objeto[ceros[j][1]].getPeso());
-            for (int k=0; k<objeto.size() && !encontrado; k++){
-                if (!v[k] && k!=ceros[j][0] && k!=ceros[j][1] && (capacidad_actual + objeto[k].getPeso()) >= 0){
-                    //cout << vecinos[i].second[j].size() << endl;
-                    vector<int> grupo = ceros[j];
-                    grupo.push_back(objeto[k].getIndice());
-                    vecinos[i].second.push_back(grupo);
-                    encontrado = true;
+
+
+
+
+vector<pair<int, vector<vector<int>>>> VecinosDobleIntercambio(const Mochila& actual, const int& capacidad) {
+    vector<pair<int, vector<vector<int>>>> vecinos = VecinosPermutacion(actual, capacidad);
+    const vector<Objeto>& objeto = actual.getObjeto(); // Se corrige el acceso a las referencias
+    const vector<bool>& v = actual.getAsignacion(); // Se corrige el acceso a las referencias
+
+    for (int i = 0; i < vecinos.size(); i++) {
+        vector<vector<int>>& ceros = vecinos[i].second;
+        int objeto_actual = vecinos[i].first;
+        for (int j = 0; j < ceros.size(); j++) {
+            int objeto_cero = ceros[j][0];
+            int capacidad_actual = capacidad - objeto[objeto_actual].getPeso() + objeto[objeto_cero].getPeso();
+            for (int k = 0; k < objeto.size(); k++) {
+                if (!v[k] && k != objeto_actual && k != objeto_cero) {
+                    int nuevo_peso = capacidad_actual + objeto[k].getPeso();
+                    if (nuevo_peso >= 0 && nuevo_peso <= capacidad) {
+                        vector<int> grupo = ceros[j];
+                        if (grupo.size() < 2) { // Control de tamaño máximo del grupo
+                            grupo.push_back(k);
+                            vecinos[i].second.push_back(grupo);
+                        }
+                    }
                 }
             }
         }
     }
-  }
-  return vecinos;
+    return vecinos;
 }
-
-/*
-vector<pair<int, vector<vector<int>>>> VecinosTripleIntercambio(const Mochila& actual, const int& capacidad){
-  vector<pair<int, vector<vector<int>>>> vecinos = VecinosDobleIntercambio(actual, capacidad);
-  const vector<Objeto> objeto = actual.getObjeto();
-  const vector<bool> v = actual.getAsignacion();
-  int capacidad_actual = capacidad;
-  for (int i=0; i<vecinos.size(); i++){
-    for (int j=0; j<objeto.size(); j++){
-      capacidad_actual = capacidad;
-      capacidad_actual -= vecinos[i].first;
-      for (int k=0; k<vecinos[i].second[vecinos[i].second.size()-1].size(); k++){
-        capacidad_actual -= objeto[vecinos[i].second[vecinos[i].second.size()-1][k]].getPeso();
-      }
-      if (!v[j] && (capacidad  + objeto[j].getPeso()) >= 0){
-        vector<int> grupo = vecinos[i].second[vecinos[i].second.size()-1];
-        grupo.push_back(j);
-        vecinos[i].second.push_back(grupo);
-      }
-    }
-  }
-
-  return vecinos;
-}
-*/
-
 
 
 void Permutacion(vector<bool>& v, const int& p1, const int& p0){
@@ -144,144 +101,115 @@ void Permutacion(vector<bool>& v, const int& p1, const int& p0){
 }
 
 void Intercambio(vector<bool>&v, const int&p0, const vector<int>& p1){
-  v[p0] = false;
+  v[p0] = !v[p0];
   for (int i=0; i<p1.size(); i++){
-    v[p1[i]] = true;
+    v[p1[i]] = !v[p1[i]];
   }
 }
+
 
 using VecinosFunc = vector<pair<int, vector<vector<int>>>> (*)(const Mochila&, const int&);
 vector<bool> busquedaLocal(Mochila& actual, const int n, const int W, const int& max_instancias, int& n_instancias,
-                           bool& maximo_local, VecinosFunc Vecinos){
-  vector<bool> v = actual.getAsignacion();
-  int capacidad = W;
-  n_instancias = 0;
-  vector<Objeto> objeto = actual.getObjeto();
-  maximo_local = false;
-  vector<pair<int, vector<vector<int>>>> vecinos;
-  Mochila nueva;
-  //cout << actual.getFitness()<< endl;
-  
-  vecinos = Vecinos(actual, capacidad);
-  v = actual.getAsignacion();
-  Random::shuffle(vecinos);
-  Random::shuffle(vecinos[vecinos.size()-1].second);
-  for (n_instancias; n_instancias<max_instancias && !maximo_local; n_instancias++){
-    Intercambio(v, vecinos[vecinos.size()-1].first, vecinos[vecinos.size()-1].second[vecinos[vecinos.size()-1].second.size()-1]);
-    Mochila nueva(objeto, v);
-    if (nueva.getFitness()>actual.getFitness()){
-      actual = nueva;
-      capacidad = W - actual.getPeso();
-      v = actual.getAsignacion();
-      vecinos = Vecinos(actual, capacidad);
-      Random::shuffle(vecinos);
-      if (!vecinos.empty()) {
-        Random::shuffle(vecinos[vecinos.size() - 1].second);
-      }
-    }
-    else{
-      vecinos[vecinos.size()-1].second.pop_back();
-    }
-    if (!vecinos.empty()){
-      if(vecinos[vecinos.size()-1].second.size() == 0){
-        vecinos.pop_back();
-      }
-    }
-    //cout << actual.getFitness()<< endl;
-    maximo_local = (vecinos.size() == 0);
-  }
-  return actual.getAsignacion();
-}
+                           bool& maximo_local, VecinosFunc Vecinos) {
+    vector<bool> mejor_asignacion = actual.getAsignacion();
+    int mejor_fitness = actual.getFitness();
+    int nueva_fitness;
+    int capacidad = W;
+    n_instancias = 0;
+    vector<Objeto> objeto = actual.getObjeto();
+    maximo_local = false;
 
-
-
-using VecinosFunc = vector<pair<int, vector<vector<int>>>> (*)(const Mochila&, const int&);
-vector<bool> busquedaLocalFact(Mochila& actual, const int n, const int W, const int& max_instancias, int& n_instancias,
-                           bool& maximo_local, VecinosFunc Vecinos){
-  vector<bool> v = actual.getAsignacion();
-  int capacidad = W;
-  n_instancias = 0;
-  vector<Objeto> objeto = actual.getObjeto();
-  maximo_local = false;
-  vector<pair<int, vector<vector<int>>>> vecinos;
-  Mochila nueva;
-  int fitness_actual =actual.getFitness();
-  //cout << actual.getFitness()<< endl;
-  /*
-  vecinos = Vecinos(actual, capacidad);
-  v = actual.getAsignacion();
-  Random::shuffle(vecinos);
-  Random::shuffle(vecinos[vecinos.size()-1].second);
-  for (n_instancias; n_instancias<max_instancias && !maximo_local; n_instancias++){
-    Intercambio(v, vecinos[vecinos.size()-1].first, vecinos[vecinos.size()-1].second[vecinos[vecinos.size()-1].second.size()-1]);
-    fitness_actual -= objeto[vecinos[vecinos.size()-1].first].getB_Individual();
-    for (int i=0; i<objeto.size(); i++){}
-    if (nueva.getFitness()>actual.getFitness()){
-      Mochila nueva(objeto, v);
-      actual = nueva;
-      capacidad = W - actual.getPeso();
-      v = actual.getAsignacion();
-      vecinos = Vecinos(actual, capacidad);
-      Random::shuffle(vecinos);
-      if (!vecinos.empty()) {
-        Random::shuffle(vecinos[vecinos.size() - 1].second);
-      }
+    while (n_instancias < max_instancias && !maximo_local) {
+        vector<pair<int, vector<vector<int>>>> vecinos = Vecinos(actual, capacidad);
+        
+        bool mejora_encontrada = false;
+        // Barajar los vecinos
+        Random::shuffle(vecinos);
+        
+        for (auto& vecino : vecinos) {
+            int indice_objeto = vecino.first;
+            vector<vector<int>>& intercambios = vecino.second;
+            
+            // Barajar los intercambios
+            Random::shuffle(intercambios);
+            
+            for (auto& intercambio : intercambios) {
+                vector<bool> v = actual.getAsignacion();
+                Intercambio(v, indice_objeto, intercambio);
+                Mochila nueva(objeto, v);
+                
+                if (nueva.getFitness() > mejor_fitness) {
+                    mejor_asignacion = v;
+                    mejor_fitness = nueva.getFitness();
+                    actual = nueva;
+                    mejora_encontrada = true;
+                    //cout << mejor_fitness << endl;
+                    break;  // Salir del bucle de intercambios
+                }
+            }
+            if (mejora_encontrada) {
+                break;  // Salir del bucle de vecinos
+            }
+        }
+        
+        if (!mejora_encontrada) {
+            maximo_local = true; // No se encontró mejora en esta iteración
+        }
+        
+        ++n_instancias;
     }
-    else{
-      vecinos[vecinos.size()-1].second.pop_back();
-    }
-    if (!vecinos.empty()){
-      if(vecinos[vecinos.size()-1].second.size() == 0){
-        vecinos.pop_back();
-      }
-    }
-    //cout << actual.getFitness()<< endl;
-    maximo_local = (vecinos.size() == 0);
-  }
-  */
-  return actual.getAsignacion();
+    
+    return mejor_asignacion;
 }
 
 
 
 using VecinosFunc = vector<pair<int, vector<vector<int>>>> (*)(const Mochila&, const int&);
 vector<bool> busquedaLocalMejor(Mochila& actual, const int n, const int W, const int& max_instancias, int& n_instancias,
-                           bool& maximo_local, VecinosFunc Vecinos){
-  vector<bool> v = actual.getAsignacion();
-  int capacidad = W;
-  n_instancias = 0;
-  vector<Objeto> objeto = actual.getObjeto();
-  maximo_local = false;
-  vector<pair<int, vector<vector<int>>>> vecinos;
-  Mochila nueva;
-  
-  vecinos = Vecinos(actual, capacidad);
-  v = actual.getAsignacion();
-  while (!maximo_local){
-    Random::shuffle(vecinos);
-    Mochila mejor_vecino = actual;
-    int mejor_beneficio = 0;
-    vector<bool> asignacion_vecino = v;
-    int beneficio_vecino;
-    for (int j=0; j<vecinos[vecinos.size()-1].second.size(); j++){
-      asignacion_vecino = v;
-      Intercambio(asignacion_vecino, vecinos[vecinos.size()-1].first, vecinos[vecinos.size()-1].second[j]);
-      Mochila vecino(objeto, asignacion_vecino);
-      beneficio_vecino = vecino.getFitness();
-      if (beneficio_vecino > mejor_beneficio){
-        mejor_vecino = vecino;
-        mejor_beneficio = beneficio_vecino;
-      }
+                                 bool& maximo_local, VecinosFunc Vecinos) {
+    vector<bool> mejor_asignacion = actual.getAsignacion();
+    int mejor_fitness = actual.getFitness();
+    int capacidad = W;
+    n_instancias = 0;
+    vector<Objeto> objeto = actual.getObjeto();
+    maximo_local = false;
+
+    while (n_instancias < max_instancias && !maximo_local) {
+        vector<pair<int, vector<vector<int>>>> vecinos = Vecinos(actual, capacidad);
+
+        bool mejora_encontrada = false;
+        Mochila mejor_mochila = actual; // Mantener un seguimiento de la mejor mochila encontrada en esta iteración
+
+        for (const auto& vecino : vecinos) {
+            const int indice_objeto = vecino.first;
+            const vector<vector<int>>& intercambios = vecino.second;
+
+            for (const auto& intercambio : intercambios) {
+                vector<bool> v = actual.getAsignacion();
+                Intercambio(v, indice_objeto, intercambio); // Función para aplicar intercambio
+                Mochila nueva(objeto, v);
+
+                if (nueva.getFitness() > mejor_fitness) { // Verificar si mejora el fitness
+                    mejor_asignacion = v;
+                    mejor_fitness = nueva.getFitness();
+                    mejor_mochila = nueva; // Actualizar la mejor mochila encontrada
+                    mejora_encontrada = true;
+                    //cout << mejor_fitness << endl;
+                }
+            }
+        }
+
+        if (mejora_encontrada) {
+            actual = mejor_mochila; // Actualizar el estado de la mochila solo si se encontró una mejora
+        } else {
+            maximo_local = true; // No se encontró mejora en esta iteración
+        }
+
+        ++n_instancias;
     }
-    vecinos.pop_back();
-    if (mejor_beneficio>actual.getFitness()){
-      actual = mejor_vecino;
-      capacidad = W - actual.getPeso();
-      v = actual.getAsignacion();
-      vecinos = Vecinos(actual, capacidad);
-    }
-    //cout << actual.getFitness()<< endl;
-    maximo_local = (vecinos.size() == 0);
-  }
-  return actual.getAsignacion();
+
+    return mejor_asignacion;
 }
+
+
+

@@ -151,6 +151,7 @@ int main(int argc, char* argv[]){
       }
       vector<bool> s_inicial = solucionInicial(objeto, n, W);
       Mochila mochila(objeto, s_inicial);
+      //cout << mochila.getPeso() << endl;
       if (algoritmo == "BL"){
         auto momentoInicio = high_resolution_clock::now();
         asignacion = busquedaLocal(mochila, n, W, max_instancias, n_instancias, maximo_local, VecinosPermutacion);
@@ -180,18 +181,9 @@ int main(int argc, char* argv[]){
     Mochila mochila(objeto, asignacion);
     beneficio_final = mochila.getFitness();
     peso_final = mochila.getPeso();
-    /*
-    for (int i = 0; i < objeto.size(); i++) {
-      if (asignacion[i]) {
-        beneficio_final += objeto[i].getB_Individual();
-        for (int j = 0; j < objeto.size(); j++) {
-          beneficio_final += objeto[i].getB_Interdependencias(j) * asignacion[j];
-        }
-      }
-    }
-    */
     
-    /*
+    ///*
+    cout << "W: " << W;
     cout << "\nPeso final = " << peso_final;
     cout << "\nBeneficio final = " << beneficio_final << endl;
     cout << "Asignacion:\n";
@@ -203,7 +195,7 @@ int main(int argc, char* argv[]){
       cout << "Se ha alcanzado un Máximo Local\n";
     }
     cout << endl;
-    */
+    //*///
     
     
     
